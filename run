@@ -58,6 +58,7 @@ if [[ -z "$DBOX_SKIP_UPDATE" ]]; then
 	        rm -rf /opt/dropbox/*
 	        mv $tmpdir/.dropbox-dist/* /opt/dropbox/
 	        rm -rf $tmpdir
+		chmod -R og+r /opt/dropbox/
 	        echo "Dropbox updated to v$Latest"
 	else
 		echo "Dropbox is up-to-date"
