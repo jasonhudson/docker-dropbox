@@ -1,14 +1,18 @@
-FROM ubuntu:xenial
+FROM debian:buster
 MAINTAINER Kelvin Foo <vmirage@gmail.com>
-ARG DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND noninteractive
+
+COPY dropbox_2019.02.14_amd64.deb /tmp/dropbox.deb
 
 # Following 'How do I add or remove Dropbox from my Linux repository?' - https://www.dropbox.com/en/help/246
-RUN echo 'deb http://linux.dropbox.com/ubuntu xenial main' > /etc/apt/sources.list.d/dropbox.list \
-	#&& echo 'deb http://deb.debian.org/debian stretch main' > /etc/apt.sources.list \
-	&& apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E \
-	&& apt-get -qqy update \
+RUN apt-get -qqy update \
+  && apt-get install -qqy /tmp/dropbox.deb \
+	&& apt-get install -qqy gnupg \
+	&& apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys FC918B335044912E \
 	# Note 'ca-certificates' dependency is required for 'dropbox start -i' to succeed
-	&& apt-get -qqy install ca-certificates curl python-gpgme libatomic1 dropbox \
+	&& apt-get -qqy install ca-certificates curl python3-gpg dropbox \
+		libatomic1 libglapi-mesa libxcb-glx0 libxcb-dri2-0 libxcb-dri3-0 libxcb-present0 libxcb-sync1 libxshmfence1 libxxf86vm1 \
+		expect \
 	# Perform image clean up.
 	&& apt-get -qqy autoclean \
 	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
@@ -20,7 +24,7 @@ RUN echo 'deb http://linux.dropbox.com/ubuntu xenial main' > /etc/apt/sources.li
 # start -i'. So we switch to 'dropbox' user temporarily and let it do its thing.
 USER dropbox
 RUN mkdir -p /dbox/.dropbox /dbox/.dropbox-dist /dbox/Dropbox /dbox/base \
-	&& echo y | dropbox start -i
+	&& expect -c 'set timeout 300; spawn dropbox start -i; expect "download the proprietary daemon"; send "y\n"; expect "Done!"; exit'
 
 # Switch back to root, since the run script needs root privs to chmod to the user's preferrred UID
 USER root
